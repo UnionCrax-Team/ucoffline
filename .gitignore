@@ -1,0 +1,11 @@
+build32/
+build64/
+build/
+.vs/
+/relbuild
+/debbuild
+/dist/
+/logs/
+uc_offline_*_ticket.bin
+uc_offline_*_ticket.hex.txt
+New folder/
