@@ -90,6 +90,8 @@ Fn_BreakpadWriteDump g_pfnBreakpadWriteDump = nullptr;
 
 uintp g_CtxCounter = 0;
 
+CDLLLoader g_Config;
+
 // ============================================================
 // Interface tracking
 // ============================================================
@@ -320,10 +322,9 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 	{
 		UCOLOG("[UCOffline] DllMain -> DLL_PROCESS_ATTACH");
 
-		static CDLLLoader s_PluginLoader;
-		s_PluginLoader.ReadConfig();
-		g_ForcedAppId = s_PluginLoader.GetAppId();
-		g_OriginalAppId = s_PluginLoader.GetOgAppId();
+		g_Config.ReadConfig();
+		g_ForcedAppId = g_Config.GetAppId();
+		g_OriginalAppId = g_Config.GetOgAppId();
 
 		SetAppIDEnv();
 		WriteAppIDFile();
@@ -362,24 +363,24 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved)
 		g_pDumpHandler = new CDumpHandler();
 		#endif
 
-		s_PluginLoader.LoadPlugins();
+		g_Config.LoadPlugins();
 
-		UCOLOG("[UCOffline] %zu plugin(s) loaded", s_PluginLoader.LoadedCount());
+		UCOLOG("[UCOffline] %zu plugin(s) loaded", g_Config.LoadedCount());
 
-		g_bSteamStubEnabled = s_PluginLoader.GetSteamStubEnabled();
+		g_bSteamStubEnabled = g_Config.GetSteamStubEnabled();
 		if (g_bSteamStubEnabled)
 		{
 			SteamStub_Init();
 		}
 
-		std::vector<uint32> unlockedDLC = s_PluginLoader.GetUnlockDLCAppIds();
+		std::vector<uint32> unlockedDLC = g_Config.GetUnlockDLCAppIds();
 		CSteamAppsStub::SetUnlockedDLCAppIds(unlockedDLC);
 
 		LoadSteamInterfacesFile();
 
-		if (s_PluginLoader.GetEmulateTicketEnabled()) {
-			uint32 emulatedAppId = s_PluginLoader.GetOgAppId();
-			if (emulatedAppId == 0) emulatedAppId = s_PluginLoader.GetAppId();
+		if (g_Config.GetEmulateTicketEnabled()) {
+			uint32 emulatedAppId = g_Config.GetOgAppId();
+			if (emulatedAppId == 0) emulatedAppId = g_Config.GetAppId();
 			CSteamUserStub::SetEmulatedApp(emulatedAppId);
 		}
 	}

@@ -14,9 +14,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
-#include <map>
 #include <set>
+#include <map>
 #include <string>
+
+class CDLLLoader;
+extern CDLLLoader g_Config;
+
+inline uint32 GetConfigurableSteamLevel() { return g_Config.GetCustomSteamLevel(); }
+inline uint64 GetConfigurableSteamID() { return g_Config.GetCustomSteamID(); }
+inline const char* GetConfigurablePersonaName() { return g_Config.GetCustomPersonaName(); }
+inline const char* GetConfigurableIPCountry() { return g_Config.GetCustomIPCountry(); }
+inline bool GetConfigurableBLoggedOn() { return g_Config.GetBLoggedOn(); }
 
 #define STEAM_API_EXPORTS
 #include "include/sdk/steam_api.h"
@@ -119,8 +128,13 @@ public:
     static bool IsEmulateTicketEnabled() { return s_bEmulateTicket; }
 
     virtual HSteamUser GetHSteamUser() override { return g_ClientUser; }
-    virtual bool BLoggedOn() override { return true; }
-    virtual CSteamID GetSteamID() override { return CSteamID(1, k_EUniversePublic, k_EAccountTypeIndividual); }
+    virtual bool BLoggedOn() override { return GetConfigurableBLoggedOn(); }
+    virtual CSteamID GetSteamID() override {
+        uint64 customID = GetConfigurableSteamID();
+        if (customID != 0)
+            return CSteamID(customID);
+        return CSteamID(76561197960265728ULL);
+    }
     virtual int InitiateGameConnection_DEPRECATED(void* pAuthBlob, int cbMaxAuthBlob, CSteamID steamIDGameServer, uint32 unIPServer, uint16 usPortServer, bool bSecure) override {
         UCOLOG("[UCOffline] InitiateGameConnection_DEPRECATED to %llu\r\n", steamIDGameServer.ConvertToUint64());
         if (!pAuthBlob || cbMaxAuthBlob < 24) return 0;
@@ -247,7 +261,7 @@ public:
         return true;
     }
     virtual int GetGameBadgeLevel(int, bool) override { return 0; }
-    virtual int GetPlayerSteamLevel() override { return 0; }
+    virtual int GetPlayerSteamLevel() override { return (int)GetConfigurableSteamLevel(); }
     virtual SteamAPICall_t RequestStoreAuthURL(const char*) override { return k_uAPICallInvalid; }
     virtual bool BIsPhoneVerified() override { return false; }
     virtual bool BIsTwoFactorEnabled() override { return false; }
@@ -561,7 +575,7 @@ public:
     virtual uint32 GetSecondsSinceComputerActive() override { return 0; }
     virtual EUniverse GetConnectedUniverse() override { return k_EUniversePublic; }
     virtual uint32 GetServerRealTime() override { return (uint32)time(nullptr); }
-    virtual const char *GetIPCountry() override { return "US"; }
+    virtual const char *GetIPCountry() override { return GetConfigurableIPCountry(); }
     virtual bool GetImageSize(int, uint32*, uint32*) override { return false; }
     virtual bool GetImageRGBA(int, uint8*, int) override { return false; }
     virtual bool GetCSERIPPort(uint32*, uint16*) override { return false; }
@@ -601,7 +615,7 @@ public:
 class CSteamFriendsStub : public ISteamFriends
 {
 public:
-    virtual const char *GetPersonaName() override { return "UCOfflineUser"; }
+    virtual const char *GetPersonaName() override { return GetConfigurablePersonaName(); }
     virtual EPersonaState GetPersonaState() override { return k_EPersonaStateOnline; }
     virtual int GetFriendCount(int) override { return 0; }
     virtual CSteamID GetFriendByIndex(int, int) override { return k_steamIDNil; }
@@ -610,7 +624,7 @@ public:
     virtual const char *GetFriendPersonaName(CSteamID) override { return ""; }
     virtual bool GetFriendGamePlayed(CSteamID, FriendGameInfo_t*) override { return false; }
     virtual const char *GetFriendPersonaNameHistory(CSteamID, int) override { return ""; }
-    virtual int GetFriendSteamLevel(CSteamID) override { return 0; }
+    virtual int GetFriendSteamLevel(CSteamID) override { return (int)GetConfigurableSteamLevel(); }
     virtual const char *GetPlayerNickname(CSteamID) override { return ""; }
     virtual int GetFriendsGroupCount() override { return 0; }
     virtual FriendsGroupID_t GetFriendsGroupIDByIndex(int) override { return -1; }

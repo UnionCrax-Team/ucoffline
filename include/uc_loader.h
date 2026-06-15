@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <vector>
 #include <algorithm>
 #include <string>
@@ -177,7 +178,67 @@ uint32 GetOgAppId()
 		return (_stricmp(buf, "true") == 0 || _stricmp(buf, "1") == 0 || _stricmp(buf, "yes") == 0);
 	}
 
-	// This does not need to be set!! It will automatically run as true!!
+	uint64 GetCustomSteamID()
+	{
+		if (m_IniPath[0] == '\0')
+			return 0;
+
+		char buf[32] = { 0 };
+		GetPrivateProfileStringA("User", "SteamID", "", buf, sizeof(buf), m_IniPath);
+
+		if (buf[0] == '\0')
+			return 0;
+
+		char* end = nullptr;
+		unsigned long long id = std::strtoull(buf, &end, 10);
+		if (end == buf)
+			return 0;
+
+		return id;
+	}
+
+	const char* GetCustomPersonaName()
+	{
+		if (m_IniPath[0] == '\0')
+			return "UCOfflineUser";
+
+		static char name[128] = { 0 };
+		GetPrivateProfileStringA("User", "PersonaName", "UCOfflineUser", name, sizeof(name), m_IniPath);
+		return name;
+	}
+
+	uint32 GetCustomSteamLevel()
+	{
+		if (m_IniPath[0] == '\0')
+			return 0;
+
+		char buf[16] = { 0 };
+		GetPrivateProfileStringA("User", "SteamLevel", "0", buf, sizeof(buf), m_IniPath);
+
+		return (uint32)strtoul(buf, nullptr, 10);
+	}
+
+	const char* GetCustomIPCountry()
+	{
+		if (m_IniPath[0] == '\0')
+			return "US";
+
+		static char country[8] = { 0 };
+		GetPrivateProfileStringA("User", "IPCountry", "US", country, sizeof(country), m_IniPath);
+		return country;
+	}
+
+	bool GetBLoggedOn()
+	{
+		if (m_IniPath[0] == '\0')
+			return true;
+
+		char buf[8] = { 0 };
+		GetPrivateProfileStringA("User", "BLoggedOn", "true", buf, sizeof(buf), m_IniPath);
+
+		return !(_stricmp(buf, "false") == 0 || _stricmp(buf, "0") == 0);
+	}
+
 	bool GetForceOwnership()
 	{
     	if (m_IniPath[0] == '\0')

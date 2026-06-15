@@ -6,6 +6,7 @@
 #include <conio.h>
 #include <string>
 #include <time.h>
+#include <stdio.h>
 
 #define STEAM_API_EXPORTS
 
@@ -13,15 +14,44 @@
 #include "steamclientpublic.h"
 #include "steam_gameserver.h"
 #include "steam_api_common.h"
+#include "include/uc_loader.h"
 
-// ---------------------------------------------------------------------------
-// Stub implementations for ISteam* interfaces
-// All return sensible defaults for pure-virtual methods.
-// ---------------------------------------------------------------------------
+static uint32 s_AppID = 480;
+static CDLLLoader g_ClientConfig;
+
+inline void InitClientConfig()
+{
+    g_ClientConfig.ReadConfig();
+}
+
+inline uint32 GetConfigurableAppID()
+{
+    uint32 id = g_ClientConfig.GetAppId();
+    return id != 0 ? id : s_AppID;
+}
+
+inline uint64 GetConfigurableSteamID()
+{
+    return g_ClientConfig.GetCustomSteamID();
+}
+
+inline const char* GetConfigurableIPCountry()
+{
+    return g_ClientConfig.GetCustomIPCountry();
+}
+
+inline const char* GetConfigurablePersonaName()
+{
+    return g_ClientConfig.GetCustomPersonaName();
+}
+
+inline bool GetConfigurableBLoggedOn()
+{
+    return g_ClientConfig.GetBLoggedOn();
+}
 
 static HSteamPipe s_NextPipe = 100;
 static HSteamUser s_NextUser = 1000;
-static uint32 s_AppID = 480;
 
 // ---- ISteamUtils stub -----------------------------------------------------
 
@@ -32,12 +62,12 @@ public:
 	uint32 GetSecondsSinceComputerActive() override { return 0; }
 	EUniverse GetConnectedUniverse() override { return k_EUniversePublic; }
 	uint32 GetServerRealTime() override { return (uint32)time(nullptr); }
-	const char *GetIPCountry() override { return "US"; }
+	const char *GetIPCountry() override { return GetConfigurableIPCountry(); }
 	bool GetImageSize(int iImage, uint32 *pnWidth, uint32 *pnHeight) override { if (pnWidth) *pnWidth = 0; if (pnHeight) *pnHeight = 0; return false; }
 	bool GetImageRGBA(int iImage, uint8 *pubDest, int nDestBufferSize) override { return false; }
 	bool GetCSERIPPort(uint32 *unIP, uint16 *usPort) override { return false; }
 	uint8 GetCurrentBatteryPower() override { return 255; }
-	uint32 GetAppID() override { return s_AppID; }
+	uint32 GetAppID() override { return GetConfigurableAppID(); }
 	void SetOverlayNotificationPosition(ENotificationPosition eNotificationPosition) override {}
 	bool IsAPICallCompleted(SteamAPICall_t hSteamAPICall, bool *pbFailed) override { if (pbFailed) *pbFailed = true; return false; }
 	ESteamAPICallFailure GetAPICallFailureReason(SteamAPICall_t hSteamAPICall) override { return k_ESteamAPICallFailureNone; }
@@ -80,8 +110,13 @@ class FakeSteamUser : public ISteamUser
 {
 public:
 	HSteamUser GetHSteamUser() override { return 0; }
-	bool BLoggedOn() override { return true; }
-	CSteamID GetSteamID() override { return CSteamID(76561197960265728ULL); }
+	bool BLoggedOn() override { return GetConfigurableBLoggedOn(); }
+	CSteamID GetSteamID() override {
+		uint64 customID = GetConfigurableSteamID();
+		if (customID != 0)
+			return CSteamID(customID);
+		return CSteamID(76561197960265728ULL);
+	}
 	int InitiateGameConnection_DEPRECATED(void* pAuthBlob, int cbMaxAuthBlob, CSteamID steamIDGameServer, uint32 unIPServer, uint16 usPortServer, bool bSecure) override { return 0; }
 	void TerminateGameConnection_DEPRECATED(uint32 unIPServer, uint16 usPortServer) override {}
 	void TrackAppUsageEvent(CGameID gameID, int eAppUsageEvent, const char *pchExtraInfo) override {}
@@ -97,13 +132,13 @@ public:
 	EBeginAuthSessionResult BeginAuthSession(const void *pAuthTicket, int cbAuthTicket, CSteamID steamID) override { return k_EBeginAuthSessionResultInvalidTicket; }
 	void EndAuthSession(CSteamID steamID) override {}
 	void CancelAuthTicket(HAuthTicket hAuthTicket) override {}
-	EUserHasLicenseForAppResult UserHasLicenseForApp(CSteamID steamID, AppId_t appID) override { return k_EUserHasLicenseResultDoesNotHaveLicense; }
+	EUserHasLicenseForAppResult UserHasLicenseForApp(CSteamID steamID, AppId_t appID) override { return k_EUserHasLicenseResultHasLicense; }
 	bool BIsBehindNAT() override { return false; }
 	void AdvertiseGame(CSteamID steamIDGameServer, uint32 unIPServer, uint16 usPortServer) override {}
 	SteamAPICall_t RequestEncryptedAppTicket(void *pDataToInclude, int cbDataToInclude) override { return k_uAPICallInvalid; }
 	bool GetEncryptedAppTicket(void *pTicket, int cbMaxTicket, uint32 *pcbTicket) override { return false; }
 	int GetGameBadgeLevel(int nSeries, bool bFoil) override { return 0; }
-	int GetPlayerSteamLevel() override { return 0; }
+	int GetPlayerSteamLevel() override { return (int)g_ClientConfig.GetCustomSteamLevel(); }
 	SteamAPICall_t RequestStoreAuthURL(const char *pchRedirectURL) override { return k_uAPICallInvalid; }
 	bool BIsPhoneVerified() override { return false; }
 	bool BIsTwoFactorEnabled() override { return false; }
@@ -253,6 +288,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpvReserved)
 	{
 		AllocConsole();
 		_cprintf_s("[FakeSteamClient] Locked n' loaded in, chief.\n");
+		InitClientConfig();
 		DisableThreadLibraryCalls(hModule);
 	}
 	return TRUE;
