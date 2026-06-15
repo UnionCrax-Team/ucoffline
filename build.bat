@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-set "PROJECT=%~dp0uc_offline.vcxproj"
+set "UC_PROJECT=%~dp0uc_offline.vcxproj"
+set "FS_PROJECT=%~dp0FakeSteamClient.vcxproj"
 
 REM Find MSBuild
 set "MSBUILD="
@@ -25,36 +26,62 @@ echo Found MSBuild: %MSBUILD%
 echo.
 
 echo ========================================
-echo  Building x86 (steam_api.dll)
+echo  Building uc_offline x86 (steam_api.dll)
 echo ========================================
-"%MSBUILD%" "%PROJECT%" -p:Configuration=Release -p:Platform=Win32 -m
+"%MSBUILD%" "%UC_PROJECT%" -p:Configuration=Release -p:Platform=Win32 -m
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] x86 build failed.
+    echo [ERROR] x86 uc_offline build failed.
     pause
     exit /b 1
 )
-echo x86 build succeeded: relbuild\x86\steam_api.dll
+echo x86 uc_offline build succeeded: relbuild\x86\steam_api.dll
 echo.
 
 echo ========================================
-echo  Building x64 (steam_api64.dll)
+echo  Building uc_offline x64 (steam_api64.dll)
 echo ========================================
-"%MSBUILD%" "%PROJECT%" -p:Configuration=Release -p:Platform=x64 -m
+"%MSBUILD%" "%UC_PROJECT%" -p:Configuration=Release -p:Platform=x64 -m
 if %errorlevel% neq 0 (
     echo.
-    echo [ERROR] x64 build failed.
+    echo [ERROR] x64 uc_offline build failed.
     pause
     exit /b 1
 )
-echo x64 build succeeded: relbuild\x64\steam_api64.dll
+echo x64 uc_offline build succeeded: relbuild\x64\steam_api64.dll
 echo.
 
 echo ========================================
-echo  Both builds completed successfully
+echo  Building FakeSteamClient x86 (steamclient.dll)
 echo ========================================
-echo  x86: relbuild\x86\steam_api.dll
-echo  x64: relbuild\x64\steam_api64.dll
+"%MSBUILD%" "%FS_PROJECT%" -p:Configuration=Release -p:Platform=Win32 -m
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] x86 FakeSteamClient build failed.
+    pause
+    exit /b 1
+)
+echo x86 FakeSteamClient build succeeded: relbuild\x86\steamclient.dll
+echo.
+
+echo ========================================
+echo  Building FakeSteamClient x64 (steamclient64.dll)
+echo ========================================
+"%MSBUILD%" "%FS_PROJECT%" -p:Configuration=Release -p:Platform=x64 -m
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] x64 FakeSteamClient build failed.
+    pause
+    exit /b 1
+)
+echo x64 FakeSteamClient build succeeded: relbuild\x64\steamclient64.dll
+echo.
+
+echo ========================================
+echo  All builds completed successfully
+echo ========================================
+echo  x86: relbuild\x86\steam_api.dll / steamclient.dll
+echo  x64: relbuild\x64\steam_api64.dll / steamclient64.dll
 echo ========================================
 
 pause

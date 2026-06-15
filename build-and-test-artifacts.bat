@@ -2,7 +2,8 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "ROOT=%~dp0"
-set "PROJECT=%ROOT%uc_offline.vcxproj"
+set "UC_PROJECT=%ROOT%uc_offline.vcxproj"
+set "FS_PROJECT=%ROOT%FakeSteamClient.vcxproj"
 set "CONFIG=%~1"
 
 if /i "%CONFIG%"=="--help" goto :usage
@@ -29,7 +30,7 @@ if not exist "%DIST%" mkdir "%DIST%"
 call :findMsBuild
 if not defined MSBUILD (
     echo [ERROR] MSBuild was not found.
-    echo Install Visual Studio Build Tools or Visual Studio with Desktop development with C++.
+    echo Install Visual Studio 2022 Build Tools or Visual Studio 2022 with Desktop development with C++.
     exit /b 1
 )
 
@@ -39,10 +40,16 @@ if not defined DUMPBIN (
     echo [WARN] dumpbin.exe was not found; skipping PE architecture and export checks.
 )
 
-call :buildOne Win32 x86 steam_api.dll
+call :buildOne Win32 x86 steam_api.dll "%UC_PROJECT%"
 if errorlevel 1 exit /b 1
 
-call :buildOne x64 x64 steam_api64.dll
+call :buildOne x64 x64 steam_api64.dll "%UC_PROJECT%"
+if errorlevel 1 exit /b 1
+
+call :buildOne Win32 x86 steamclient.dll "%FS_PROJECT%"
+if errorlevel 1 exit /b 1
+
+call :buildOne x64 x64 steamclient64.dll "%FS_PROJECT%"
 if errorlevel 1 exit /b 1
 
 call :verifyArtifact "%BUILD_DIR%\x86\steam_api.dll" x86
@@ -51,17 +58,29 @@ if errorlevel 1 exit /b 1
 call :verifyArtifact "%BUILD_DIR%\x64\steam_api64.dll" x64
 if errorlevel 1 exit /b 1
 
+call :verifyArtifact "%BUILD_DIR%\x86\steamclient.dll" x86
+if errorlevel 1 exit /b 1
+
+call :verifyArtifact "%BUILD_DIR%\x64\steamclient64.dll" x64
+if errorlevel 1 exit /b 1
+
 call :stageArtifact "%BUILD_DIR%\x86\steam_api.dll" "%DIST%\x86"
 if errorlevel 1 exit /b 1
 
 call :stageArtifact "%BUILD_DIR%\x64\steam_api64.dll" "%DIST%\x64"
 if errorlevel 1 exit /b 1
 
+call :stageArtifact "%BUILD_DIR%\x86\steamclient.dll" "%DIST%\x86"
+if errorlevel 1 exit /b 1
+
+call :stageArtifact "%BUILD_DIR%\x64\steamclient64.dll" "%DIST%\x64"
+if errorlevel 1 exit /b 1
+
 echo.
 echo All builds and artifact checks passed.
 echo Staged artifacts:
-echo   %DIST%\x86\steam_api.dll
-echo   %DIST%\x64\steam_api64.dll
+echo   %DIST%\x86\steam_api.dll / steamclient.dll
+echo   %DIST%\x64\steam_api64.dll / steamclient64.dll
 exit /b 0
 
 :usage
@@ -121,14 +140,15 @@ exit /b 0
 set "PLATFORM=%~1"
 set "ARCH=%~2"
 set "ARTIFACT=%~3"
-set "LOG=%LOGDIR%\build-%CONFIG%-%ARCH%.log"
-set "BINLOG=%LOGDIR%\msbuild-%CONFIG%-%ARCH%.binlog"
+set "BUILD_PROJECT=%~4"
+set "LOG=%LOGDIR%\build-%CONFIG%-%ARCH%-%ARTIFACT%.log"
+set "BINLOG=%LOGDIR%\msbuild-%CONFIG%-%ARCH%-%ARTIFACT%.binlog"
 
 echo.
-echo Building %CONFIG% ^| %PLATFORM%
-"%MSBUILD%" "%PROJECT%" -p:Configuration=%CONFIG% -p:Platform=%PLATFORM% -m -v:m /bl:"%BINLOG%" > "%LOG%" 2>&1
+echo Building %CONFIG% ^| %PLATFORM% ^| %ARTIFACT%
+"%MSBUILD%" "%BUILD_PROJECT%" -p:Configuration=%CONFIG% -p:Platform=%PLATFORM% -m -v:m /bl:"%BINLOG%" > "%LOG%" 2>&1
 if errorlevel 1 (
-    echo [ERROR] %CONFIG% ^| %PLATFORM% build failed.
+    echo [ERROR] %CONFIG% ^| %PLATFORM% ^| %ARTIFACT% build failed.
     echo See %LOG% and %BINLOG%.
     exit /b 1
 )
