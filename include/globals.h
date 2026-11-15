@@ -17,6 +17,7 @@
 #include <set>
 #include <map>
 #include <string>
+void UCOLOG(const char* fmt, ...);
 #include "uc_loader.h"
 
 extern CDLLLoader g_Config;
@@ -47,7 +48,6 @@ extern HSteamUser g_ClientUser;
 extern HSteamUser g_ServerUser;
 extern uint32 g_ForcedAppId;
 
-void UCOLOG(const char* fmt, ...);
 void DumpTicketBytes(const char* source, const void* ticket, uint32 ticketSize);
 
 extern std::set<std::string> g_RequestedInterfaces;
