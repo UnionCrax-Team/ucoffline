@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <string>
 
+void UCOLOG(const char* fmt, ...);
+
 class CDLLLoader
 {
 private:
