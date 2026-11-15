@@ -17,8 +17,8 @@
 #include <set>
 #include <map>
 #include <string>
+#include "uc_loader.h"
 
-class CDLLLoader;
 extern CDLLLoader g_Config;
 
 inline uint32 GetConfigurableSteamLevel() { return g_Config.GetCustomSteamLevel(); }
